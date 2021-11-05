@@ -32,6 +32,16 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 # define BUTTON_UP 6
 # define BUTTON_DOWN 5
 
+unsigned long blink_timer = millis();
+# define BLINKING_INTERVAL 800
+
+# define DRY 0
+# define FULL 1
+# define TIME_TO_FLOOD 10
+byte torpedo_tube = DRY;
+byte torpedo_flooing_counter = 0;
+
+
 static const unsigned char PROGMEM logo_bmp[] =
 { 0b00000000, 0b11000000,
   0b00000001, 0b11000000,
@@ -85,44 +95,83 @@ void setup() {
 
 
 void loop() {
-  bool flood_button = (digitalRead(FLOOD_BUTTON) == HIGH);
+  bool flood_button = (digitalRead(FLOOD_BUTTON) == LOW);
   bool fire_button = (digitalRead(BUTTON_FIRE) == LOW);
   bool up_button = (digitalRead(BUTTON_UP) == LOW);
   bool down_button = (digitalRead(BUTTON_DOWN) == LOW);
 
-  if (flood_button) {
-    digitalWrite(FLOOD_LED_RED, HIGH);    
-    digitalWrite(FLOOD_LED_BLUE, HIGH);
-    digitalWrite(FLOOD_LED_GREEN, blink);
-
-  } else {
-    digitalWrite(FLOOD_LED_RED, LOW);
-    digitalWrite(FLOOD_LED_BLUE, blink);
-    digitalWrite(FLOOD_LED_GREEN, HIGH);
+  if (torpedo_tube == DRY) {
+      if (flood_button) {
+        // up
+        if (torpedo_flooing_counter >= TIME_TO_FLOOD) {
+            torpedo_tube = FULL;
+            digitalWrite(FLOOD_LED_RED, LOW);    
+            digitalWrite(FLOOD_LED_BLUE, LOW);
+            digitalWrite(FLOOD_LED_GREEN, HIGH);
+        } else {
+            digitalWrite(FLOOD_LED_RED, blink);    
+            digitalWrite(FLOOD_LED_BLUE, LOW);
+            digitalWrite(FLOOD_LED_GREEN, LOW);
+            torpedo_flooing_counter += 1;
+        }
+      } else {
+        // down
+        if (torpedo_flooing_counter > 0) {
+          digitalWrite(FLOOD_LED_RED, LOW);
+          digitalWrite(FLOOD_LED_BLUE, blink);
+          digitalWrite(FLOOD_LED_GREEN, LOW);
+          torpedo_flooing_counter -= 1;
+        } else {
+          digitalWrite(FLOOD_LED_RED, HIGH);
+          digitalWrite(FLOOD_LED_BLUE, LOW);
+          digitalWrite(FLOOD_LED_GREEN, LOW);
+        }
+        
+      }
   }
+  
+  if (torpedo_tube == FULL) {
+    if (!flood_button) {
+        // down
+        if (torpedo_flooing_counter > 0) {
+          digitalWrite(FLOOD_LED_RED, LOW);
+          digitalWrite(FLOOD_LED_BLUE, blink);
+          digitalWrite(FLOOD_LED_GREEN, LOW);
+          torpedo_flooing_counter -= 1;
+        } else {
+          digitalWrite(FLOOD_LED_RED, HIGH);
+          digitalWrite(FLOOD_LED_BLUE, LOW);
+          digitalWrite(FLOOD_LED_GREEN, LOW);
+        }
+      }
+  
+  }
+
   
   display.clearDisplay();
 
   display.setTextSize(1);      // Normal 1:1 pixel scale
   display.setTextColor(SSD1306_WHITE); // Draw white text
+  display.setTextWrap(false);
   display.setCursor(0, 0);     // Start at top-left corner
-  display.print("F ");
-  display.println(String(fire_button));
-//  display.setCursor(1, 0);     
-  display.print("UP ");
+  display.print(F("Water level: "));
+  display.print(String(torpedo_flooing_counter*10));
+  display.println(F("%"));
+  display.print(F("UP "));
   display.println(String(up_button));
-//  display.setCursor(2, 0);     
   display.print(F("DOWN "));
   display.println(String(down_button));
-//  display.setCursor(4, 4);
   display.print(F("LINHA 4"));
 
   display.display();
 
-  if (blink == LOW) {
-    blink = HIGH;
-  } else {
-    blink = LOW;
+  if (millis() - blink_timer > BLINKING_INTERVAL) {
+    blink_timer = millis();
+    if (blink == LOW) {
+      blink = HIGH;
+    } else {
+      blink = LOW;
+    }
   }
   delay(1000);
 }
