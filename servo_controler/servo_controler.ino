@@ -8,6 +8,7 @@ RotaryEncoder encoder(7, 8);
 
 #define NUM_SERVOS 8
 
+#define BUTTON_SAVE 3
 
 int servoPins[NUM_SERVOS] = {A0, A1, A2, A3, A4, A5, A6, A7};
 Servo servo[NUM_SERVOS];
@@ -19,7 +20,12 @@ byte prev_state = 0;
 
 void setup() {
   pinMode(9, INPUT_PULLUP); // rotary enconder button INPUT_PULLUP
-  pinMode(13, INPUT); // RUN / MANUAL
+  pinMode(2, INPUT_PULLUP); //
+  pinMode(BUTTON_SAVE, INPUT_PULLUP); //
+  pinMode(4, INPUT_PULLUP); //
+  pinMode(5, INPUT_PULLUP); //
+  pinMode(6, INPUT_PULLUP); //
+  pinMode(13, INPUT_PULLUP); // RUN / MANUAL
 
   tm.reset();
   tm.displayText("Servo");
@@ -35,27 +41,21 @@ void setup() {
   tm.displayText("Serial");
   Serial.begin(9600); // opens serial port, sets data rate to 9600 bps
 
-
-  //Mensagem inicial
-  //  tm.displayText("Arduino");
-  //  delay(3000);
-  //  tm.displayText("BOTOES");
-  //  s1.attach(A0);
-  tm.reset();
+  delay(1000);
 }
 
 
 void loop() {
   if (digitalRead(13) == HIGH) {
     if (prev_state != 1) {
-        tm.displayText("PLAY");
-        prev_state = 1;
+      tm.displayText("PLAY");
+      prev_state = 1;
     }
     play();
   } else {
     if (prev_state != 2) {
-        tm.displayText("SAVE");
-        prev_state = 2;
+      tm.displayText("SAVE");
+      prev_state = 2;
     }
     manual();
   }
@@ -63,7 +63,7 @@ void loop() {
 
 void play() {
   if (Serial.available() > 0) {
-//    for (int i = 0; i < NUM_SERVOS; i++) {
+    //    for (int i = 0; i < NUM_SERVOS; i++) {
     while (Serial.parseInt() != -1);
     Serial.read();
     int s = Serial.parseInt();
@@ -81,13 +81,14 @@ void manual() {
   uint8_t buttons = tm.readButtons();
   if (buttons != 0) {
     selectedServo = getSelected(buttons);
+    Serial.println(selectedServo);
+
+    //    for (uint8_t position = 0; position < 8; position++)
+    //    {
+    //      tm.setLED(position, selectedServo == position);
+    //    }
   }
-  
-  
-  for (uint8_t position = 0; position < 8; position++)
-  {
-    tm.setLED(position, selectedServo == position);
-  }
+
 
   encoder.tick();
   rotaryButton = (digitalRead(9) == HIGH);
@@ -103,10 +104,9 @@ void manual() {
       degrees[selectedServo] = 179;
     }
     servo[selectedServo].write(degrees[selectedServo]);
-    sendPos();
- }
+  }
 
- if (dir == RotaryEncoder::Direction::COUNTERCLOCKWISE && degrees[selectedServo] > 0) {
+  if (dir == RotaryEncoder::Direction::COUNTERCLOCKWISE && degrees[selectedServo] > 0) {
     if (rotaryButton) {
       degrees[selectedServo] -= 10;
     } else {
@@ -116,22 +116,35 @@ void manual() {
       degrees[selectedServo] = 1;
     }
     servo[selectedServo].write(degrees[selectedServo]);
-    sendPos();
   }
 
-  displayNumber(degrees[selectedServo]);
- 
+  // displayNumber(degrees[selectedServo]);
+
+  //  if (digitalRead(BUTTON_SAVE) == HIGH) {
+  //    for (uint8_t position = 0; position < 8; position++)
+  //    {
+  //      tm.setLED(position, 1);
+  //    }
+  //    sendPos();
+  //    delay(500);
+  //    for (uint8_t position = 0; position < 8; position++)
+  //    {
+  //      tm.setLED(position, selectedServo == position);
+  //    }
+  //  }
+
+
 }
 
-void sendPos() {
-   for (int i = 0; i < NUM_SERVOS; i++) {
-    if (i > 0) {
-      Serial.print(',');
-    }
-    Serial.print(degrees[i]);
-  }
-  Serial.println(';');
-}
+//void sendPos() {
+//   for (int i = 0; i < NUM_SERVOS; i++) {
+//    if (i > 0) {
+//      Serial.print(',');
+//    }
+//    Serial.print(degrees[i]);
+//  }
+//  Serial.println(';');
+//}
 
 
 byte getSelected(uint8_t value) {
