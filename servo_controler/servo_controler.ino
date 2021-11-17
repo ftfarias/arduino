@@ -8,9 +8,9 @@ RotaryEncoder encoder(7, 8);
 
 #define NUM_SERVOS 8
 
-#define BUTTON_SAVE 3
+#define BUTTON_SAVE 6
 
-int servoPins[NUM_SERVOS] = {A0, A1, A2, A3, A4, A5, A6, A7};
+int servoPins[NUM_SERVOS] = {A0, A1, A2, A3, A4, A5, 3, 4};
 Servo servo[NUM_SERVOS];
 byte selectedServo = 0;
 int degrees[NUM_SERVOS];
@@ -21,10 +21,8 @@ byte prev_state = 0;
 void setup() {
   pinMode(9, INPUT_PULLUP); // rotary enconder button INPUT_PULLUP
   pinMode(2, INPUT_PULLUP); //
-  pinMode(BUTTON_SAVE, INPUT_PULLUP); //
-  pinMode(4, INPUT_PULLUP); //
+  //  pinMode(BUTTON_SAVE, INPUT_PULLUP); //
   pinMode(5, INPUT_PULLUP); //
-  pinMode(6, INPUT_PULLUP); //
   pinMode(13, INPUT_PULLUP); // RUN / MANUAL
 
   tm.reset();
@@ -81,12 +79,11 @@ void manual() {
   uint8_t buttons = tm.readButtons();
   if (buttons != 0) {
     selectedServo = getSelected(buttons);
-    Serial.println(selectedServo);
 
-    //    for (uint8_t position = 0; position < 8; position++)
-    //    {
-    //      tm.setLED(position, selectedServo == position);
-    //    }
+    for (uint8_t position = 0; position < 8; position++)
+    {
+      tm.setLED(position, selectedServo == position);
+    }
   }
 
 
@@ -118,33 +115,33 @@ void manual() {
     servo[selectedServo].write(degrees[selectedServo]);
   }
 
-  // displayNumber(degrees[selectedServo]);
+  displayNumber(degrees[selectedServo]);
 
-  //  if (digitalRead(BUTTON_SAVE) == HIGH) {
-  //    for (uint8_t position = 0; position < 8; position++)
-  //    {
-  //      tm.setLED(position, 1);
-  //    }
-  //    sendPos();
-  //    delay(500);
-  //    for (uint8_t position = 0; position < 8; position++)
-  //    {
-  //      tm.setLED(position, selectedServo == position);
-  //    }
-  //  }
+  if (digitalRead(BUTTON_SAVE) == HIGH) {
+    for (uint8_t position = 0; position < 8; position++)
+    {
+      tm.setLED(position, 1);
+    }
+    sendPos();
+    delay(500);
+    for (uint8_t position = 0; position < 8; position++)
+    {
+      tm.setLED(position, selectedServo == position);
+    }
+  }
 
 
 }
 
-//void sendPos() {
-//   for (int i = 0; i < NUM_SERVOS; i++) {
-//    if (i > 0) {
-//      Serial.print(',');
-//    }
-//    Serial.print(degrees[i]);
-//  }
-//  Serial.println(';');
-//}
+void sendPos() {
+  for (int i = 0; i < NUM_SERVOS; i++) {
+    if (i > 0) {
+      Serial.print(',');
+    }
+    Serial.print(degrees[i]);
+  }
+  Serial.println(';');
+}
 
 
 byte getSelected(uint8_t value) {
