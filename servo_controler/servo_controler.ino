@@ -21,7 +21,7 @@ byte prev_state = 0;
 void setup() {
   pinMode(9, INPUT_PULLUP); // rotary enconder button INPUT_PULLUP
   pinMode(2, INPUT_PULLUP); //
-  //  pinMode(BUTTON_SAVE, INPUT_PULLUP); //
+  pinMode(BUTTON_SAVE, INPUT_PULLUP); //
   pinMode(5, INPUT_PULLUP); //
   pinMode(13, INPUT_PULLUP); // RUN / MANUAL
 
@@ -140,7 +140,7 @@ void sendPos() {
     }
     Serial.print(degrees[i]);
   }
-  Serial.println(';');
+  Serial.println(';'); 
 }
 
 
