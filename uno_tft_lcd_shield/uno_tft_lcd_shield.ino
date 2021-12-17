@@ -40,7 +40,7 @@ void readResistiveTouch(void)
     pinMode(XM, OUTPUT);
     //digitalWrite(YP, HIGH);  //because TFT control pins
     //digitalWrite(XM, HIGH);
-    Serial.println("tp.x=" + String(tp.x) + ", tp.y=" + String(tp.y) + ", tp.z =" + String(tp.z));
+//    Serial.println("tp.x=" + String(tp.x) + ", tp.y=" + String(tp.y) + ", tp.z =" + String(tp.z));
 }
 
 bool isPressed(void)
@@ -69,7 +69,7 @@ void setup()
   tft.setRotation(1); // "PORTRAIT", "LANDSCAPE", "PORTRAIT_REV", "LANDSCAPE_REV"
 
   tft.fillScreen(GRAY);
-  tft.drawRect(0, 0, 10, 10, BLUE);
+  tft.drawRect(0, 0, 10, 10, RED);
 }
 
 void loop()
@@ -77,20 +77,26 @@ void loop()
 //  int width = tft.width(); // 400
 //  int height = tft.height(); // 240
 
-  tft.setTextColor(WHITE);
-  tft.setTextSize(1);
 
   if (isPressed()) {
-    Serial.println("pressed");
+//    Serial.println("pressed");
     readResistiveTouch();
     //  LANDSCAPE CALIBRATION     400 x 240
     int x = map(tp.y, 959, 166, 0, 400);
     int y = map(tp.x, 180, 927, 0, 240);
-    Serial.println(x);
-    Serial.println(y);
+
+
+//    Serial.println(x);
+//    Serial.println(y);
     drawCrossHair(x,y, BLUE);
     // tft.setCursor(x, y);
     // tft.print("x");
+
+    tft.fillRect(0, 0, 400, 12, WHITE);
+    tft.setTextColor(BLACK);
+    tft.setTextSize(1);
+    tft.setCursor(10, 2);
+    tft.print("x=" + String(x) + ", y=" + String(y));
   }
 
   
