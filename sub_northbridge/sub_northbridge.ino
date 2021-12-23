@@ -1,3 +1,4 @@
+// https://github.com/victorsvi/MatrixKeypad
 #include <MatrixKeypad.h>
 
 //#include <Adafruit_PCD8544.h>
@@ -9,11 +10,11 @@ const int rs = 36, en = 34, d4 = 32, d5 = 30, d6 = 28, d7 = 26;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 
-const uint8_t rown = 4; //4 rows
-const uint8_t coln = 4; //4 columns
-uint8_t rowPins[rown] = {46, 48, 50, 52}; //frist row is connect to pin 10, second to 9...
-uint8_t colPins[coln] = {38, 40, 42, 44}; //frist column is connect to pin 6, second to 5...
-char keymap[rown][coln] =
+const uint8_t keymapRowns = 4; //4 rows
+const uint8_t keymapColns = 4; //4 columns
+uint8_t rowPins[keymapRowns] = {46, 48, 50, 52}; //frist row is connect to pin 10, second to 9...
+uint8_t colPins[keymapColns] = {38, 40, 42, 44}; //frist column is connect to pin 6, second to 5...
+char keymap[keymapRowns][keymapColns] =
 { {'1', '2', '3', 'A'}, //key of the frist row frist column is '1', frist row second column column is '2'
   {'4', '5', '6', 'B'}, //key of the second row frist column is '4', second row second column column is '5'
   {'7', '8', '9', 'C'},
@@ -36,7 +37,7 @@ void setup() {
   Serial2.begin(9600);
   Serial3.begin(115200);
 
-  keypad = MatrixKeypad_create((char*)keymap, rowPins, colPins, rown, coln); //creates the keypad object
+  keypad = MatrixKeypad_create((char*)keymap, rowPins, colPins, keymapRowns, keymapColns); //creates the keypad object
 
 
   //  nokia1.begin();
@@ -71,8 +72,6 @@ void setup() {
   }
 
 
-
-
   //  delay(700);
   //  lcd.noDisplay();
   //  delay(800);
@@ -101,7 +100,7 @@ void setup() {
 }
 
 void loop() {
-//  lcd.clear();
+  //  lcd.clear();
 
   if (Serial2.available()) {
     lcd.setCursor(0, 4);
@@ -153,9 +152,10 @@ void loop() {
     lcd.print(key);
 
     if (key == '*') {
+      lcd.setCursor(0, 2);
+      lcd.print("                    ");
       keypadPos = 0;
     }
-    Serial.print(key); //prints the pressed key to the serial output
   }
 
   delay(100);
