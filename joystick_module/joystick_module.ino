@@ -36,6 +36,13 @@ boolean calCenterBtn;
 boolean calRangeBtn;
 boolean holdBtn;
 
+boolean running = false;
+
+unsigned long startTime;
+unsigned long stopTime;
+unsigned long totalTime = 0;
+word counterTime = 0;
+
 void checkPosition()
 {
   encoder->tick();
@@ -72,6 +79,17 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(PIN_IN2), checkPosition, CHANGE);
 }
 
+
+void screenSpeed() {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(counterTime);
+  lcd.setCursor(0, 1);
+  lcd.print(totalTime / counterTime);
+  counterTime = 0;
+  totalTime = 0;
+  delay(1000);
+}
 
 void screenAxis() {
   char c[16];
@@ -154,16 +172,22 @@ void calRange() {
 void saveCal() {
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print(F("Saving calibrating...."));
+  lcd.print(F("Saving"));
+  lcd.setCursor(0, 1);
+  lcd.print(F("calibration"));
   delay(100);
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print(F("Calibration saved"));
+  lcd.print(F("Calibration"));
+  lcd.setCursor(0, 1);
+  lcd.print(F("saved"));
   delay(100);
 }
 
 
 void loop() {
+  startTime = micros();
+
   encoder->tick(); // just call tick() to check the state.
 
   encoder_pos = encoder->getPosition();
@@ -184,7 +208,7 @@ void loop() {
   joy[4] = analogRead(A6);
   joy[5] = analogRead(A7);
 
-  encoderBtn = digitalRead(PIN_ENCODER_BTN)  == HIGH;
+  encoderBtn = digitalRead(PIN_ENCODER_BTN)  == LOW;
   joyBtn = digitalRead(PIN_JOY_BTN)          == HIGH;
   saveBtn = digitalRead(PIN_SAVE_BTN)        == HIGH;
   calCenterBtn = digitalRead(PIN_CAL_CENTER) == LOW;
@@ -216,12 +240,18 @@ void loop() {
     }
   } else {
     for (byte i = 0; i < 6; i++) {
+      //  range_min  - c - range_max
+      //  +100       - 0 -   -100
       int c = center[i];
       int j = joy[i];
-      if (j < c - 5) {
-        output[i] = map(j, range_min[i], c, 0, -100);
-      } else if (j > c + 5) {
-        output[i] = map(j, c, range_max[i], 100, c);
+      if (j < c ) {
+        // range_min < j < c
+        // +100      < x < 0
+        output[i] = map(j, range_min[i], c, 100, 0);
+      } else if (j > c ) {
+        //  c < j < range_max
+        //  0 < x < -100
+        output[i] = map(j, c, range_max[i], 0, -100);
       } else {
         output[i] = 0;
       }
@@ -229,14 +259,35 @@ void loop() {
     }
   }
 
-  screen = encoder_pos % 2;
-  if (screen == 0) {
-    screenAxis();
+  screen = encoder_pos % 3;
+  if (encoderBtn) {
+    screenSpeed();
   }
+
+  if (screen == 0) {
+    if (!running) {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print(F("Running"));
+      lcd.setCursor(0, 1);
+      lcd.print(F("<no output>"));
+    }
+    running = true;
+  }
+
 
   if (screen == 1) {
-    screenOutput();
+    screenAxis();
+    running = false;
   }
 
+  if (screen == 2) {
+    screenOutput();
+    running = false;
 
+  }
+
+  stopTime = micros();
+  counterTime++;
+  totalTime += (stopTime - startTime);
 }
