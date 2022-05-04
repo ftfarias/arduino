@@ -22,6 +22,7 @@ int dataPin = 10;
 
 
 byte screen = 0;
+byte oldScreen = 99;
 word calCenterCounter = 0;
 word calRangeCounter = 0;
 int encoder_pos = 0;
@@ -44,8 +45,17 @@ boolean running = false;
 
 unsigned long startTime;
 unsigned long stopTime;
-unsigned long totalTime = 0;
 word counterTime = 0;
+byte leds = 0;
+const byte LEDS_CENTER1 = B00100000; // OK
+const byte LEDS_CENTER2 = B00010000; // OK
+const byte LEDS_CENTER3 = B00001000; // OK
+const byte LEDS_BUTTON =       B00000001; // OK
+const byte LEDS_DATASENT =     B01000000; // OK
+const byte LEDS_DATARECEIVED = B10000000;
+const byte LEDS_CALIBRATION1 = B00000010; // OK
+const byte LEDS_CALIBRATION2 = B00000100; 
+
 
 void checkPosition()
 {
@@ -55,6 +65,8 @@ void checkPosition()
 
 
 void setup() {
+  Serial.begin(115200);
+
   pinMode(PIN_ENCODER_BTN, INPUT_PULLUP);
   pinMode(PIN_JOY_BTN, INPUT_PULLUP);
   pinMode(PIN_SAVE_BTN, INPUT_PULLUP);
@@ -87,6 +99,8 @@ void setup() {
   // register interrupt routine
   attachInterrupt(digitalPinToInterrupt(PIN_IN1), checkPosition, CHANGE);
   attachInterrupt(digitalPinToInterrupt(PIN_IN2), checkPosition, CHANGE);
+
+  startTime = micros();
 }
 
 void shiftOut(int myDataPin, int myClockPin, byte myDataOut) {
@@ -143,7 +157,7 @@ void shiftOut(int myDataPin, int myClockPin, byte myDataOut) {
 //  digitalWrite(latchPin, HIGH);
 //}
 
-void updateShiftRegister(byte leds)
+void updateShiftRegister()
 {
   digitalWrite(latchPin, LOW);
   shiftOut(dataPin, clockPin, leds);
@@ -153,11 +167,13 @@ void updateShiftRegister(byte leds)
 void screenSpeed() {
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print(counterTime);
+  char c[16];
+  sprintf(c, "Counter: %4d", counterTime);
+  lcd.print(c);
   lcd.setCursor(0, 1);
-  lcd.print(totalTime / counterTime);
+  lcd.print((stopTime - startTime) / counterTime);
   counterTime = 0;
-  totalTime = 0;
+  startTime = micros();
   delay(1000);
 }
 
@@ -248,23 +264,29 @@ void calRange() {
 }
 
 void saveCal() {
+  leds |= LEDS_CALIBRATION1;
+  updateShiftRegister();
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print(F("Saving"));
   lcd.setCursor(0, 1);
   lcd.print(F("calibration"));
   delay(100);
+  leds &= ~LEDS_CALIBRATION1;
+  leds |= LEDS_CALIBRATION2;
+  updateShiftRegister();
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print(F("Calibration"));
   lcd.setCursor(0, 1);
   lcd.print(F("saved"));
   delay(100);
+  leds &= ~LEDS_CALIBRATION2;
+  updateShiftRegister();
 }
 
 
 void loop() {
-  startTime = micros();
 
   encoder->tick(); // just call tick() to check the state.
 
@@ -337,23 +359,65 @@ void loop() {
     }
   }
 
+  
+
+  if (output[0] < 2 && output[0] > -2) {
+    leds |= LEDS_CENTER1;
+  } else {
+    leds &= ~LEDS_CENTER1;
+  }
+
+  if (output[1] < 2 && output[1] > -2) {
+    leds |= LEDS_CENTER2;
+  } else {
+    leds &= ~LEDS_CENTER2;
+  }
+
+  if (output[2] < 2 && output[2] > -2) {
+    leds |= LEDS_CENTER3;
+  } else {
+    leds &= ~LEDS_CENTER3;
+  }
+
+
+  if (joyBtn) {
+    leds |= LEDS_BUTTON;
+  } else {
+    leds &= ~LEDS_BUTTON;
+  }
+
+  
   screen = encoder_pos % 4;
+
+  if (screen != oldScreen) {
+    lcd.clear();
+    oldScreen = screen;
+  }
+  
   if (encoderBtn) {
+    stopTime = micros();
     screenSpeed();
   }
 
   if (screen == 0) {
     if (!running) {
-      lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print(F("Running"));
       lcd.setCursor(0, 1);
       lcd.print(F("<no output>"));
+      leds |= LEDS_DATASENT;
+
     }
     running = true;
+    Serial.println("start");
+    for (byte i = 0; i < 6; i++) {
+      Serial.println(output[i]);
+    }
+  } else {
+    leds &= ~LEDS_DATASENT;
   }
 
-
+    
   if (screen == 1) {
     screenAxis();
     running = false;
@@ -370,10 +434,10 @@ void loop() {
     running = false;
 
   }
-  updateShiftRegister(encoder_pos);
+  
+//  if ((counterTime % 10) == 0) {
+    updateShiftRegister();
+//  }
 
-
-  stopTime = micros();
   counterTime++;
-  totalTime += (stopTime - startTime);
 }
