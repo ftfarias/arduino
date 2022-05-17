@@ -54,7 +54,7 @@ const byte LEDS_BUTTON =       B00000001; // OK
 const byte LEDS_DATASENT =     B01000000; // OK
 const byte LEDS_DATARECEIVED = B10000000;
 const byte LEDS_CALIBRATION1 = B00000010; // OK
-const byte LEDS_CALIBRATION2 = B00000100; 
+const byte LEDS_CALIBRATION2 = B00000100;
 
 
 void checkPosition()
@@ -110,12 +110,15 @@ void shiftOut(int myDataPin, int myClockPin, byte myDataOut) {
   //internal function setup
   int i = 0;
   int pinState;
-  pinMode(myClockPin, OUTPUT);
-  pinMode(myDataPin, OUTPUT);
+  //  pinMode(myClockPin, OUTPUT);
+  //  pinMode(myDataPin, OUTPUT);
   //clear everything out just in case to
   //prepare shift register for bit shifting
+
   digitalWrite(myDataPin, 0);
+
   digitalWrite(myClockPin, 0);
+
   //for each bit in the byte myDataOut&#xFFFD;
   //NOTICE THAT WE ARE COUNTING DOWN in our for loop
   //This means that %00000001 or "1" will go through such
@@ -127,13 +130,11 @@ void shiftOut(int myDataPin, int myClockPin, byte myDataOut) {
     // %11010100 it would the code compares it to %01000000
     // and proceeds to set pinState to 1.
     if ( myDataOut & (1 << i) ) {
-      pinState = 1;
+      digitalWrite(myDataPin, 1);
     }
     else {
-      pinState = 0;
+      digitalWrite(myDataPin, 0);
     }
-    //Sets the pin to HIGH or LOW depending on pinState
-    digitalWrite(myDataPin, pinState);
     //register shifts bits on upstroke of clock pin
     digitalWrite(myClockPin, 1);
     //zero the data pin after shift to prevent bleed through
@@ -359,7 +360,7 @@ void loop() {
     }
   }
 
-  
+
 
   if (output[0] < 2 && output[0] > -2) {
     leds |= LEDS_CENTER1;
@@ -386,14 +387,14 @@ void loop() {
     leds &= ~LEDS_BUTTON;
   }
 
-  
+
   screen = encoder_pos % 4;
 
   if (screen != oldScreen) {
     lcd.clear();
     oldScreen = screen;
   }
-  
+
   if (encoderBtn) {
     stopTime = micros();
     screenSpeed();
@@ -409,15 +410,16 @@ void loop() {
 
     }
     running = true;
-    Serial.println("start");
     for (byte i = 0; i < 6; i++) {
+      Serial.print(i);
+      Serial.print('=');
       Serial.println(output[i]);
     }
   } else {
     leds &= ~LEDS_DATASENT;
   }
 
-    
+
   if (screen == 1) {
     screenAxis();
     running = false;
@@ -434,10 +436,10 @@ void loop() {
     running = false;
 
   }
-  
-//  if ((counterTime % 10) == 0) {
-    updateShiftRegister();
-//  }
+
+  //  if ((counterTime % 10) == 0) {
+  updateShiftRegister();
+  //  }
 
   counterTime++;
 }
